@@ -19,7 +19,7 @@ var config = {
     facebook: {
         appId: '1691821884476309',
         loginParams: {
-            scope: 'public_profile,email,pages_show_list,manage_pages,pages_messaging'
+            scope: 'public_profile,email,pages_show_list,manage_pages'
         },
         userFields: 'id,name,email'
     }
@@ -967,7 +967,6 @@ var messages = {
                 `
             },
             page: 'Página',
-            selectAPage: 'Selecione uma',
             cancel: formLabels.cancelButton,
             submit: formLabels.submitButton
         }
@@ -997,9 +996,9 @@ var messages = {
         faq: {
             title: 'Perguntas Frequentes',
             description: `
-                Cadastre abaixo alguns temas de perguntas que sua
-                assistente pode responder por você. Um tema é um
-                conjunto de perguntas cuja resposta é a mesma. 
+                Cadastre abaixo alguns temas de perguntas que sua assistente pode
+                responder por você. Um tema é um conjunto de perguntas cuja resposta
+				é a mesma. 
             `,
             intentList: 'Temas',
             addIntentOption: 'Novo tema',
@@ -1269,17 +1268,9 @@ var updateBotFormComponent = ((fields, isUpdating, classes, messages, onSubmit) 
 `);
 
 var pageListComponent = ((pages, selectedPage, classes, selectId) => html`
-<select 
-    value=${ selectedPage.pageId }
-    name=${ selectId } 
-    class=${ classes.input }
->
-    <option>
-        ${ messages.channels.facebook.selectAPage }
-    </option>
+<select name=${ selectId } class=${ classes.input }>
     ${ pages.map(page => html`
         <option
-            value=${ page.id }
             ${ selectedPage.pageId === page.id ? 'selected' : '' }
         >
             ${ page.name }
@@ -1349,7 +1340,7 @@ const view = (title, panels) => html`
 
 const createSubmit = (bot, pages, send) => e => {
     e.preventDefault();
-    const newPage = pages[e.target.select.selectedIndex - 1];
+    const newPage = pages[e.target.select.selectedIndex];
     send('api:updateBot', {
         botId: bot.id,
         ownerId: bot.customerId,
@@ -1624,7 +1615,7 @@ var repliesFormComponent = ((replyTitles, selectedReplyKey, replies, selectedRep
         </div>
     </div>
     <div class="ln_solid"></div>
-    <div class=${ classes.formGroup } data-replyKey=${ selectedReplyKey }>
+    <div class=${ classes.formGroup }>
         ${ selectedReplyKey ? genericTemplate(selectedReplyKey, selectedReply, replies, utterances, classes.reply) : null }
     </div>
 </div>
