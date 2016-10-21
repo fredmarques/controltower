@@ -40,11 +40,6 @@ export default {
                     Selecione uma página para ser o contato de
                     Facebook Messenger com o qual as pessoas farão consultas de
                     rastreio de pedidos via chat.
-                `,
-                noPageFoundMessage: `
-                Para configurar o contato de Facebook Messenger com o qual
-                as pessoas farão consultas de rastreio de pedidos via chat,
-                é preciso que você tenha uma página no facebook.
                 `
             },
             page: 'Página',
@@ -95,6 +90,11 @@ export default {
     },
     replies: {
         title: 'Editar Respostas',
+        faq: {
+            title: 'Perguntas Frequentes',
+            description: `Selecione um dos temas de perguntas 
+                para editar a resposta correspondente`
+        },
         ecommerce: {
             title: 'E-commerce',
             description: `

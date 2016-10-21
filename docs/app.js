@@ -11,7 +11,7 @@ var html = _interopDefault(require('choo/html'));
 
 var config = {
     controltower: {
-        apiUrl: 'https://y437us1qni.execute-api.us-east-1.amazonaws.com/latest'
+        apiUrl: 'https://zvll8fpfa4.execute-api.us-east-1.amazonaws.com/latest'
     },
     sage: {
         apiUrl: 'https://idxpyugwsa.execute-api.us-east-1.amazonaws.com/dev'
@@ -25,7 +25,7 @@ var config = {
     }
 };
 
-var version = "0.15.7";
+var version = "0.15.8";
 
 
 
@@ -537,10 +537,11 @@ const createApiModel = config => ({
                     send('ui:disableSection', 'ecommerce', done);
                 }
                 if (bot.replies) {
-                    const selectedReply = bot.type === 'ecommerce' ? 'start' : null;
-                    send('ui:enableSection', 'replies', done);
+                    if (bot.type === 'ecommerce') {
+                        send('ui:enableSection', 'replies', done);
+                        send('ui:selectReply', 'start', done);
+                    }
                     send('replies:set', JSON.parse(bot.replies), done);
-                    send('ui:selectReply', selectedReply, done);
                     send('api:loadingBotEnd', null, done);
                 } else {
                     send('ui:disableSection', 'replies', done);
@@ -780,6 +781,9 @@ const createSageModel = config => ({
                 */
                 if (data.field === 'intents') {
                     const intentNames = response.body.map(intentObj => intentObj.name);
+                    if (intentNames.length > 1) {
+                        send('ui:enableSection', 'replies', done);
+                    }
                     return send('intents:setNames', intentNames, done);
                 }
                 /* EXAMPLE RESPONSE (field = utterances)
@@ -866,6 +870,7 @@ const createSageModel = config => ({
                 send('intents:addUtterance', {
                     intent: data.intent, utterance: data.utterance
                 }, done);
+                send('ui:enableSection', 'replies', done);
                 return done();
             });
         },
@@ -959,11 +964,6 @@ var messages = {
                     Selecione uma página para ser o contato de
                     Facebook Messenger com o qual as pessoas farão consultas de
                     rastreio de pedidos via chat.
-                `,
-                noPageFoundMessage: `
-                Para configurar o contato de Facebook Messenger com o qual
-                as pessoas farão consultas de rastreio de pedidos via chat,
-                é preciso que você tenha uma página no facebook.
                 `
             },
             page: 'Página',
@@ -1014,6 +1014,11 @@ var messages = {
     },
     replies: {
         title: 'Editar Respostas',
+        faq: {
+            title: 'Perguntas Frequentes',
+            description: `Selecione um dos temas de perguntas 
+                para editar a resposta correspondente`
+        },
         ecommerce: {
             title: 'E-commerce',
             description: `
@@ -1353,20 +1358,13 @@ const createSubmit = (bot, pages, send) => e => {
     return send('bot:setFacebookPage', newPage);
 };
 
-// Returns true if the user own or administrates
-// any Facebook page, false otherwise.
-const hasPages = pages => pages.length !== 0;
-
 var channelsContent = ((state, prev, send) => {
     const pages = state.ui.facebookPages;
     const currentPage = state.bot.facebook;
     const isUpdating = state.api.updatingBot;
     const onSubmit = createSubmit(state.bot, pages, send);
-    // just show the form if user has any pages
-    const form = hasPages(pages) ? pageListFormComponent(pages, currentPage, isUpdating, formClasses, messages.channels.facebook, onSubmit) : '';
-    // set the description according to user's pages number
-    const description = hasPages(pages) ? messages.channels.facebook.description.trackOrder : messages.channels.facebook.description.noPageFoundMessage;
-    const panels = [panel(form, messages.channels.facebook.title, description)];
+    const form = pageListFormComponent(pages, currentPage, isUpdating, formClasses, messages.channels.facebook, onSubmit);
+    const panels = [panel(form, messages.channels.facebook.title, messages.channels.facebook.description.trackOrder)];
     return view(messages.channels.title, panels);
 });
 
@@ -1550,6 +1548,7 @@ const genericTemplate = (selectedReplyKey, selectedReply = { text: '' }, replies
     const buttons = selectedReply.buttons;
     const other = objectWithoutProperties(selectedReply, ['sampleQuestion', 'template', 'title', 'subtitle', 'text', 'buttons']);
 
+    const isTemplateGeneric = template === 'generic';
     const isButton = selectedReplyKey.split('.')[0] === 'buttons';
     const sampleQuestionBalloon = !sampleQuestion && !utterances[selectedReplyKey] ? null : html`
     <p class=${ classes.sampleQuestion }>
@@ -1557,9 +1556,9 @@ const genericTemplate = (selectedReplyKey, selectedReply = { text: '' }, replies
     </p>`;
     const titleInput = !title ? null : html`
         <input class=${ classes.title } name="title" value=${ title } />`;
-    const subtitleOrText = subtitle || text;
-    const subtitleFieldName = template === 'generic' ? 'subtitle' : 'text';
-    const subtitleInput = !subtitleOrText || isButton ? null : html`
+    const subtitleOrText = isTemplateGeneric ? subtitle : text;
+    const subtitleFieldName = isTemplateGeneric ? 'subtitle' : 'text';
+    const subtitleInput = isButton ? null : html`
         <textarea 
             class=${ classes.subtitle } 
             name=${ subtitleFieldName }
@@ -1606,19 +1605,7 @@ const genericTemplate = (selectedReplyKey, selectedReply = { text: '' }, replies
     `;
 };
 
-// const replyTitles = messages.replyTitles;
-
 var repliesFormComponent = ((replyTitles, selectedReplyKey, replies, selectedReply, utterances, classes, messages, isLoading, onChange, onSubmit) => {
-    console.log('1', replyTitles);
-    console.log('2', selectedReplyKey);
-    console.log('3', replies);
-    console.log('4', selectedReply);
-    console.log('5', utterances);
-    console.log('6', classes);
-    console.log('7', messages);
-    console.log('8', isLoading);
-    console.log('9', onChange);
-    console.log('10', onSubmit);
     const fields = html`
 <div>
     <div class=${ classes.formGroup }>
@@ -1631,7 +1618,8 @@ var repliesFormComponent = ((replyTitles, selectedReplyKey, replies, selectedRep
                 class=${ classes.input }
                 onchange=${ onChange }
             >
-                ${ buildOptions(selectedReplyKey, messages.replyTitles) }
+                <option>${ messages.selectAReply }</option>
+                ${ buildOptions(selectedReplyKey, replyTitles) }
             </select>
         </div>
     </div>
@@ -1684,11 +1672,13 @@ const classes$1 = Object.assign({}, formClasses, { reply: replyClasses });
 var repliesContent = ((state, prev, send) => {
     const selectedReplyKey = state.ui.selectedReply;
     const selectedReply = selectedReplyKey ? ramda.path(state.ui.selectedReply.split('.'), state.replies) : null;
-    const replyTitles = state.intents.names.filter(name => name !== 'none').reduce((previous, name) => Object.assign(previous, { [name]: name }), {});
+    const intentNames = state.intents.names.filter(name => name !== 'none').reduce((previous, name) => Object.assign(previous, { [name]: name }), {});
+    const ecommerceReplyTitles = messages.replies.ecommerce.replyTitles;
+    const replyTitles = state.bot.type === 'faq' ? intentNames : ecommerceReplyTitles;
     const onChange = createOnChange(send);
     const onSubmit = createOnSubmit(selectedReplyKey, selectedReply, state.bot, send);
     const content = repliesFormComponent(replyTitles, selectedReplyKey, state.replies, selectedReply, state.intents.utterances, classes$1, messages.replies.ecommerce, state.api.loadingBot || state.api.updatingBot, onChange, onSubmit);
-    const panels = [panel(content, messages.replies.ecommerce.title, messages.replies.ecommerce.description)];
+    const panels = [panel(content, messages.replies[state.bot.type].title, messages.replies[state.bot.type].description)];
     return view(messages.replies.title, panels);
 });
 
@@ -1908,16 +1898,16 @@ var debugContent = (state => html`
 <div>
     <h1>Controltower API</h1>
 <code><pre>${ JSON.stringify(state.api, ' ', 2) }</pre></code>
-    <h1>Sage API</h1>
-<code><pre>${ JSON.stringify(state.sage, ' ', 2) }</pre></code>
-    <h1>Intents</h1>
-<code><pre>${ JSON.stringify(state.intents, ' ', 2) }</pre></code>
     <h1>Customer</h1>
 <code><pre>${ JSON.stringify(state.customer, ' ', 2) }</pre></code>
     <h1>Bot</h1>
 <code><pre>${ JSON.stringify(state.bot, ' ', 2) }</pre></code>
     <h1>Users</h1>
 <code><pre>${ JSON.stringify(state.users, ' ', 2) }</pre></code>
+    <h1>Sage API</h1>
+<code><pre>${ JSON.stringify(state.sage, ' ', 2) }</pre></code>
+    <h1>Intents</h1>
+<code><pre>${ JSON.stringify(state.intents, ' ', 2) }</pre></code>
     <h1>Replies</h1>
 <code><pre>${ JSON.stringify(state.replies, ' ', 2) }</pre></code>
 </div>

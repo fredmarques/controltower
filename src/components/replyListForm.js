@@ -40,6 +40,7 @@ const genericTemplate = (
         buttons,
         ...other
     } = selectedReply;
+    const isTemplateGeneric = template === 'generic';
     const isButton = selectedReplyKey.split('.')[0] === 'buttons';
     const sampleQuestionBalloon = !sampleQuestion && !utterances[selectedReplyKey] ? null : html`
     <p class=${classes.sampleQuestion}>
@@ -47,9 +48,9 @@ const genericTemplate = (
     </p>`;
     const titleInput = !title ? null : html`
         <input class=${classes.title} name="title" value=${title} />`;
-    const subtitleOrText = subtitle || text;
-    const subtitleFieldName = template === 'generic' ? 'subtitle' : 'text';
-    const subtitleInput = (!subtitleOrText || isButton) ? null
+    const subtitleOrText = isTemplateGeneric ? subtitle : text;
+    const subtitleFieldName = isTemplateGeneric ? 'subtitle' : 'text';
+    const subtitleInput = (isButton) ? null
         : html`
         <textarea 
             class=${classes.subtitle} 
@@ -99,8 +100,6 @@ const genericTemplate = (
     `;
 };
 
-// const replyTitles = messages.replyTitles;
-
 export default (
     replyTitles,
     selectedReplyKey,
@@ -113,16 +112,6 @@ export default (
     onChange,
     onSubmit
 ) => {
-    console.log('1', replyTitles);
-    console.log('2', selectedReplyKey);
-    console.log('3', replies);
-    console.log('4', selectedReply);
-    console.log('5', utterances);
-    console.log('6', classes);
-    console.log('7', messages);
-    console.log('8', isLoading);
-    console.log('9', onChange);
-    console.log('10', onSubmit);
     const fields = html`
 <div>
     <div class=${classes.formGroup}>
@@ -135,7 +124,8 @@ export default (
                 class=${classes.input}
                 onchange=${onChange}
             >
-                ${buildOptions(selectedReplyKey, messages.replyTitles)}
+                <option>${messages.selectAReply}</option>
+                ${buildOptions(selectedReplyKey, replyTitles)}
             </select>
         </div>
     </div>
